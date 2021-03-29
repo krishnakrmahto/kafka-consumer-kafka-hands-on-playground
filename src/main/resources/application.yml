@@ -3,3 +3,4 @@ spring:
     consumer:
       group-id: "default-spring-consumer-group"
       enable-auto-commit: true
+      auto-offset-reset: earliest

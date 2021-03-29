@@ -8,7 +8,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class FixedRateConsumer
 {
-    @KafkaListener(topics = "t_fixedrate")
+    @KafkaListener(topics = "t_fixedrate_2")
     public void consume(String message)
     {
         log.info("Cunsuming message: {}", message);
