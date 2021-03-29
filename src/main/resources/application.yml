@@ -1,0 +1,5 @@
+spring:
+  kafka:
+    consumer:
+      group-id: "default-spring-consumer-group"
+      enable-auto-commit: true
