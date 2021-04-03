@@ -1,10 +1,15 @@
 package com.course.kafkaconsumer.config;
 
+import com.course.kafkaconsumer.entity.CarLocation;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
 
@@ -17,7 +22,7 @@ public class KafkaConfig
     private final KafkaProperties kafkaProperties;
 
     @Bean
-    public ConsumerFactory<String, String> consumerFactory()
+    public ConsumerFactory<Object, Object> consumerFactory()
     {
         Map<String, Object> consumerProperties = kafkaProperties.buildConsumerProperties();
 
@@ -25,5 +30,27 @@ public class KafkaConfig
         consumerProperties.put(ConsumerConfig.METADATA_MAX_AGE_CONFIG, "120000");
 
         return new DefaultKafkaConsumerFactory<>(consumerProperties);
+    }
+
+    @Bean(name = "farLocationContainerFactory")
+    public ConcurrentKafkaListenerContainerFactory<Object, Object> farLocationContainerFactory(
+            ConcurrentKafkaListenerContainerFactoryConfigurer configurer)
+    {
+        ConcurrentKafkaListenerContainerFactory<Object, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        configurer.configure(factory, consumerFactory());
+
+        factory.setRecordFilterStrategy(consumerRecord -> {
+            CarLocation carLocation = null;
+            try {
+                carLocation = new ObjectMapper().readValue(consumerRecord.value().toString(),
+                                                           CarLocation.class);
+            }
+            catch(JsonProcessingException e) {
+                return false;
+            }
+            return carLocation.getDistance() <= 100;
+        });
+
+        return factory;
     }
 }
