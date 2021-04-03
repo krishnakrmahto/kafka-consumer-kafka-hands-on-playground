@@ -6,6 +6,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 
 //@Service
 @Slf4j
+
 public class KafkaKeyConsumer
 {
     @KafkaListener(topics = "t_multiple_partitions", concurrency = "4")
