@@ -17,7 +17,6 @@ public class FoodOrderErrorHandler implements ConsumerAwareListenerErrorHandler
         log.warn("Food order error. Pretending sending this to ElasticSerach. MessagePayload: {}, Exception: {}",
                  message.getPayload(),
                  exception);
-
-        return null;
+        throw exception;
     }
 }

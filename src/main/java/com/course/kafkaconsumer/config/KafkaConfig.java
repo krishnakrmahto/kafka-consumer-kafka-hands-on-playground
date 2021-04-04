@@ -1,5 +1,6 @@
 package com.course.kafkaconsumer.config;
 
+import com.course.kafkaconsumer.consumer.errorhandler.GlobalErrorHandler;
 import com.course.kafkaconsumer.entity.CarLocation;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -50,6 +51,18 @@ public class KafkaConfig
             }
             return carLocation.getDistance() <= 100;
         });
+
+        return factory;
+    }
+
+    @Bean(name = "kafkaListenerContainerFactory")
+    public ConcurrentKafkaListenerContainerFactory<Object, Object> kafkaListenerContainerFactory(
+            ConcurrentKafkaListenerContainerFactoryConfigurer configurer)
+    {
+        ConcurrentKafkaListenerContainerFactory<Object, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        configurer.configure(factory, consumerFactory());
+
+        factory.setErrorHandler(new GlobalErrorHandler());
 
         return factory;
     }
