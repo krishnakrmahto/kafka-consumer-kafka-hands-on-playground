@@ -6,6 +6,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
+import org.apache.kafka.common.TopicPartition;
 import org.springframework.boot.autoconfigure.kafka.ConcurrentKafkaListenerContainerFactoryConfigurer;
 import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
@@ -13,9 +14,13 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
 import org.springframework.kafka.core.ConsumerFactory;
 import org.springframework.kafka.core.DefaultKafkaConsumerFactory;
+import org.springframework.kafka.core.KafkaOperations;
+import org.springframework.kafka.listener.DeadLetterPublishingRecoverer;
+import org.springframework.kafka.listener.SeekToCurrentErrorHandler;
 import org.springframework.retry.backoff.FixedBackOffPolicy;
 import org.springframework.retry.policy.SimpleRetryPolicy;
 import org.springframework.retry.support.RetryTemplate;
+import org.springframework.util.backoff.FixedBackOff;
 
 import java.util.Map;
 
@@ -92,6 +97,22 @@ public class KafkaConfig
 
         factory.setErrorHandler(new GlobalErrorHandler());
         factory.setRetryTemplate(createRetryTemplate());
+
+        return factory;
+    }
+
+    @Bean("invoiceDltConsumerFactory")
+    public ConcurrentKafkaListenerContainerFactory<Object, Object> invoiceDltConsumerFactory(
+            ConcurrentKafkaListenerContainerFactoryConfigurer configurer, KafkaOperations<Object, Object> kafkaOperations)
+    {
+        ConcurrentKafkaListenerContainerFactory<Object, Object> factory = new ConcurrentKafkaListenerContainerFactory<>();
+        configurer.configure(factory, consumerFactory());
+
+        DeadLetterPublishingRecoverer recoverer = new DeadLetterPublishingRecoverer(kafkaOperations,
+                                                    ((consumerRecord, e) -> new TopicPartition("t_invoice_dlt",
+                                                                                               consumerRecord.partition())));
+
+        factory.setErrorHandler(new SeekToCurrentErrorHandler(recoverer, new FixedBackOff(10000, 5)));
 
         return factory;
     }
